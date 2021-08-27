@@ -1,0 +1,11 @@
+[package]
+name = "xpc-serde"
+version = "0.1.0"
+edition = "2018"
+authors = ["Lucy <lucy@absolucy.moe>"]
+license = "MPL-2.0"
+
+[dependencies]
+serde = { version = "1.0.129", features = ["derive"] }
+thiserror = "1.0.26"
+xpc-connection = { git = "https://github.com/Absolucy/xpc-connection-rs", branch = "more-types" }
