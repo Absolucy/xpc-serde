@@ -20,10 +20,10 @@ enum Animal {
 
 fn main() {
 	let map = {
-		let mut map = HashMap::<&'static str, u64>::new();
-		map.insert("a", 1);
-		map.insert("b", 2);
-		map.insert("c", 3);
+		let mut map = HashMap::<String, u64>::new();
+		map.insert("a".to_string(), 1);
+		map.insert("b".to_string(), 2);
+		map.insert("c".to_string(), 3);
 		map
 	};
 	let a = xpc_serde::serialize(&Animal::Dog).unwrap();

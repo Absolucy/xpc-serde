@@ -503,7 +503,7 @@ impl<'de> EnumAccess<'de> for EnumAccessor {
 			.cloned()
 			.next()
 			.ok_or(DeserializeError::EndOfArray)?;
-		self.variant = dbg!(Some(key.clone()));
+		self.variant = Some(key.clone());
 		let key = seed.deserialize(XpcDeserializer {
 			message: Message::String(key),
 		})?;
@@ -518,13 +518,18 @@ impl<'de> VariantAccess<'de> for EnumAccessor {
 		Err(DeserializeError::Unexpected("string", "map"))
 	}
 
-	fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value, Self::Error>
+	fn newtype_variant_seed<T>(mut self, seed: T) -> Result<T::Value, Self::Error>
 	where
 		T: DeserializeSeed<'de>,
 	{
-		seed.deserialize(XpcDeserializer {
-			message: Message::Dictionary(self.map),
-		})
+		match self
+			.variant
+			.take()
+			.and_then(|variant| self.map.remove(&variant))
+		{
+			Some(message) => seed.deserialize(XpcDeserializer { message }),
+			None => Err(DeserializeError::EndOfArray),
+		}
 	}
 
 	fn tuple_variant<V>(mut self, _len: usize, visitor: V) -> Result<V::Value, Self::Error>

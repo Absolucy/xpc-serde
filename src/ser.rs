@@ -183,6 +183,7 @@ impl<'a> Serializer for &'a mut XpcSerializer {
 		Ok(XpcMapSerializer {
 			serializer: self,
 			map: HashMap::with_capacity(len.unwrap_or(0)),
+			variant: None,
 			key: None,
 		})
 	}
@@ -195,6 +196,7 @@ impl<'a> Serializer for &'a mut XpcSerializer {
 		Ok(XpcMapSerializer {
 			serializer: self,
 			map: HashMap::with_capacity(len),
+			variant: None,
 			key: None,
 		})
 	}
@@ -203,12 +205,13 @@ impl<'a> Serializer for &'a mut XpcSerializer {
 		self,
 		_name: &'static str,
 		_variant_index: u32,
-		_variant: &'static str,
+		variant: &'static str,
 		len: usize,
 	) -> Result<Self::SerializeStructVariant, Self::Error> {
 		Ok(XpcMapSerializer {
 			serializer: self,
 			map: HashMap::with_capacity(len),
+			variant: Some(variant),
 			key: None,
 		})
 	}
@@ -298,6 +301,7 @@ impl<'a> SerializeTupleVariant for XpcVariantSerializer<'a> {
 pub(crate) struct XpcMapSerializer<'a> {
 	serializer: &'a mut XpcSerializer,
 	map: HashMap<CString, Message>,
+	variant: Option<&'static str>,
 	key: Option<CString>,
 }
 
@@ -379,6 +383,14 @@ impl<'a> SerializeStructVariant for XpcMapSerializer<'a> {
 	}
 
 	fn end(self) -> Result<Self::Ok, Self::Error> {
-		Ok(Message::Dictionary(self.map))
+		let map = match self.variant {
+			Some(variant) => {
+				let mut map = HashMap::<CString, Message>::with_capacity(1);
+				map.insert(CString::new(variant)?, Message::Dictionary(self.map));
+				map
+			}
+			None => self.map,
+		};
+		Ok(Message::Dictionary(map))
 	}
 }
