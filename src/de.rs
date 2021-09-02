@@ -33,9 +33,12 @@ impl<'de, 'a> Deserializer<'de> for XpcDeserializer {
 			Message::Double(v) => visitor.visit_f64(v),
 			Message::Int64(v) => visitor.visit_i64(v),
 			Message::String(v) => visitor.visit_string(v.into_string().unwrap()),
-			Message::Dictionary(_) => todo!(),
-			Message::Array(_) => todo!(),
-			Message::Data(v) => visitor.visit_bytes(v.as_ref()),
+			Message::Dictionary(v) => visitor.visit_map(MapAccessor {
+				elements: v.into_iter().collect(),
+				current_value: None,
+			}),
+			Message::Array(v) => visitor.visit_seq(VecAccessor { elements: v.into() }),
+			Message::Data(v) => visitor.visit_byte_buf(v),
 			Message::Uint64(v) => visitor.visit_u64(v),
 			Message::Null => visitor.visit_unit(),
 			_ => Err(DeserializeError::Unexpected(
@@ -203,7 +206,17 @@ impl<'de, 'a> Deserializer<'de> for XpcDeserializer {
 		match self.message {
 			Message::Uint64(v) => match char::from_u32(v as u32) {
 				Some(c) => visitor.visit_char(c),
-				None => unimplemented!(),
+				None => Err(DeserializeError::Unexpected(
+					"utf-8 character",
+					xpc_message_to_type(&self.message),
+				)),
+			},
+			Message::Int64(v) => match char::from_u32(v as u32) {
+				Some(c) => visitor.visit_char(c),
+				None => Err(DeserializeError::Unexpected(
+					"utf-8 character",
+					xpc_message_to_type(&self.message),
+				)),
 			},
 			Message::String(s) if s.to_str().map(str::len).unwrap_or(0) == 1 => {
 				visitor.visit_char(s.to_str()?.chars().next().unwrap())
