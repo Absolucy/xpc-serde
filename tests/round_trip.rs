@@ -75,6 +75,14 @@ round_trip!(
 		Message::Uint64(42)
 	])
 );
+round_trip!(
+	round_trip_some,
+	Some("Don't Panic!".to_string()),
+	Option<String>,
+	Message::String(cstr!("Don't Panic!"))
+);
+round_trip!(round_trip_none, None, Option<String>, Message::Null);
+round_trip!(round_trip_unit, (), (), Message::Null);
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 enum TestEnum {
