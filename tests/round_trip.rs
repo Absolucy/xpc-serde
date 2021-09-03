@@ -15,6 +15,24 @@ macro_rules! round_trip {
 	};
 }
 
+macro_rules! cstr {
+	($value:expr) => {
+		CString::new($value).expect(concat!("failed to create CString from '", $value, "'"))
+	};
+}
+
+macro_rules! dict {
+	[$($key:expr => $value:expr),*] => {
+		{
+			let mut map = HashMap::new();
+			$(
+				map.insert($key, $value);
+			)*
+			map
+		}
+	};
+}
+
 round_trip!(round_trip_bool, true, bool, Message::Bool(true));
 round_trip!(round_trip_u8, 42, u8, Message::Uint64(42));
 round_trip!(round_trip_i8, 42, i8, Message::Int64(42));
@@ -28,7 +46,7 @@ round_trip!(
 	round_trip_string,
 	"Hello World!".to_string(),
 	String,
-	Message::String(CString::new("Hello World!").unwrap())
+	Message::String(cstr!("Hello World!"))
 );
 round_trip!(
 	round_trip_array,
@@ -44,20 +62,18 @@ round_trip!(
 );
 round_trip!(
 	round_trip_dict,
-	{
-		let mut map = HashMap::new();
-		map.insert("foo".to_string(), "bar".to_string());
-		map
-	},
+	dict!["foo".to_string() => "bar".to_string()],
 	HashMap<String, String>,
-	Message::Dictionary({
-		let mut map = HashMap::new();
-		map.insert(
-			CString::new("foo").unwrap(),
-			Message::String(CString::new("bar").unwrap()),
-		);
-		map
-	})
+	Message::Dictionary(dict![cstr!("foo") => Message::String(cstr!("bar"))])
+);
+round_trip!(
+	round_trip_tuple,
+	("Don't Panic!".to_string(), 42),
+	(String, u64),
+	Message::Array(vec![
+		Message::String(cstr!("Don't Panic!")),
+		Message::Uint64(42)
+	])
 );
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -77,20 +93,16 @@ round_trip!(
 	round_trip_single_enum,
 	TestEnum::Single(42),
 	TestEnum,
-	Message::Dictionary({
-		let mut map = HashMap::new();
-		map.insert(CString::new("Single").unwrap(), Message::Uint64(42));
-		map
-	})
+	Message::Dictionary(dict![cstr!("Single") => Message::Uint64(42)])
 );
-round_trip!(round_trip_tuple_enum, TestEnum::Tuple(1, 2), TestEnum, {
-	let mut map = HashMap::new();
-	map.insert(
-		CString::new("Tuple").unwrap(),
-		Message::Array(vec![Message::Uint64(1), Message::Uint64(2)]),
-	);
-	Message::Dictionary(map)
-});
+round_trip!(
+	round_trip_tuple_enum,
+	TestEnum::Tuple(1, 2),
+	TestEnum,
+	Message::Dictionary(dict![
+		cstr!("Tuple") => Message::Array(vec![Message::Uint64(1), Message::Uint64(2)])
+	])
+);
 round_trip!(
 	round_trip_struct_enum,
 	TestEnum::Struct {
@@ -98,22 +110,12 @@ round_trip!(
 		b: "foo".to_string()
 	},
 	TestEnum,
-	{
-		let mut map = HashMap::new();
-		map.insert(
-			CString::new("Struct").unwrap(),
-			Message::Dictionary({
-				let mut map = HashMap::new();
-				map.insert(CString::new("a").unwrap(), Message::Uint64(1));
-				map.insert(
-					CString::new("b").unwrap(),
-					Message::String(CString::new("foo").unwrap()),
-				);
-				map
-			}),
-		);
-		Message::Dictionary(map)
-	}
+	Message::Dictionary(dict![
+		cstr!("Struct") => Message::Dictionary(dict![
+			cstr!("a") => Message::Uint64(1),
+			cstr!("b") => Message::String(cstr!("foo"))
+		])
+	])
 );
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -130,14 +132,72 @@ round_trip!(
 		c: true
 	},
 	TestStruct,
-	{
-		let mut map = HashMap::new();
-		map.insert(CString::new("a").unwrap(), Message::Uint64(1));
-		map.insert(
-			CString::new("b").unwrap(),
-			Message::String(CString::new("foo").unwrap()),
-		);
-		map.insert(CString::new("c").unwrap(), Message::Bool(true));
-		Message::Dictionary(map)
-	}
+	Message::Dictionary(dict![
+		cstr!("a") => Message::Uint64(1),
+		cstr!("b") => Message::String(cstr!("foo")),
+		cstr!("c") => Message::Bool(true)
+	])
+);
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct ComplexStruct {
+	a: TestStruct,
+	b: (TestEnum, TestEnum, TestEnum, TestEnum),
+	c: Vec<u64>,
+	d: HashMap<String, u64>,
+}
+round_trip!(
+	round_trip_complex_struct,
+	ComplexStruct {
+		a: TestStruct {
+			a: 42,
+			b: "foo".to_string(),
+			c: true
+		},
+		b: (
+			TestEnum::Simple,
+			TestEnum::Single(42),
+			TestEnum::Tuple(1, 2),
+			TestEnum::Struct {
+				a: 1,
+				b: "bar".to_string()
+			}
+		),
+		c: vec![1, 2, 3, 4, 5],
+		d: dict!["foo".to_string() => 42, "bar".to_string() => 1337]
+	},
+	ComplexStruct,
+	Message::Dictionary(dict![
+		cstr!("a") => Message::Dictionary(dict![
+			cstr!("a") => Message::Uint64(42),
+			cstr!("b") => Message::String(cstr!("foo")),
+			cstr!("c") => Message::Bool(true)
+		]),
+		cstr!("b") => Message::Array(vec![
+			Message::String(cstr!("Simple")),
+			Message::Dictionary(dict![
+				cstr!("Single") => Message::Uint64(42)
+			]),
+			Message::Dictionary(dict![
+				cstr!("Tuple") => Message::Array(vec![Message::Uint64(1), Message::Uint64(2)])
+			]),
+			Message::Dictionary(dict![
+				cstr!("Struct") => Message::Dictionary(dict![
+					cstr!("a") => Message::Uint64(1),
+					cstr!("b") => Message::String(cstr!("bar"))
+				])
+			])
+		]),
+		cstr!("c") => Message::Array(vec![
+			Message::Uint64(1),
+			Message::Uint64(2),
+			Message::Uint64(3),
+			Message::Uint64(4),
+			Message::Uint64(5)
+		]),
+		cstr!("d") => Message::Dictionary(dict![
+			cstr!("foo") => Message::Uint64(42),
+			cstr!("bar") => Message::Uint64(1337)
+		])
+	])
 );
