@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, ffi::CString};
-use xpc_connection::Message;
+use xpc_connection::{message_to_xpc_object, xpc_object_to_message, Message};
 
 macro_rules! round_trip {
 	($name:ident, $value:expr, $type:ty, $expected:expr) => {
@@ -9,7 +9,9 @@ macro_rules! round_trip {
 			let initial: $type = $value;
 			let encoded = xpc_serde::serialize(&initial).expect("failed to serialize");
 			assert_eq!(encoded, $expected);
-			let decoded = xpc_serde::deserialize::<$type>(encoded).expect("failed to deserialize");
+			let reencoded = xpc_object_to_message(message_to_xpc_object(encoded));
+			let decoded =
+				xpc_serde::deserialize::<$type>(reencoded).expect("failed to deserialize");
 			assert_eq!(decoded, initial);
 		}
 	};
