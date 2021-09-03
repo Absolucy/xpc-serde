@@ -33,8 +33,10 @@ impl ser::Error for SerializeError {
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum DeserializeError {
+	#[error("failed to deserialize str: {0}")]
+	InvalidStr(#[from] std::str::Utf8Error),
 	#[error("failed to deserialize string: {0}")]
-	InvalidString(#[from] std::str::Utf8Error),
+	InvalidString(#[from] std::ffi::IntoStringError),
 	#[error("expected {0}, got {1}")]
 	Unexpected(&'static str, &'static str),
 	#[error("attempted to fetch element from end of array")]

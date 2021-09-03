@@ -519,7 +519,7 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 [[package]]
 name = "xpc-connection"
 version = "0.2.3"
-source = "git+https://github.com/Absolucy/xpc-connection-rs?branch=more-types#69ea5d934e0e0c9e9469a5d1dce34baf083f6ba0"
+source = "git+https://github.com/Absolucy/xpc-connection-rs?branch=partialeq#8f2db00c873f38d3d4193492b052ab1ee3049f75"
 dependencies = [
  "block",
  "futures",
@@ -529,7 +529,7 @@ dependencies = [
 [[package]]
 name = "xpc-connection-sys"
 version = "0.1.1"
-source = "git+https://github.com/Absolucy/xpc-connection-rs?branch=more-types#69ea5d934e0e0c9e9469a5d1dce34baf083f6ba0"
+source = "git+https://github.com/Absolucy/xpc-connection-rs?branch=partialeq#8f2db00c873f38d3d4193492b052ab1ee3049f75"
 dependencies = [
  "bindgen",
 ]

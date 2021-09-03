@@ -246,7 +246,7 @@ impl<'de, 'a> Deserializer<'de> for XpcDeserializer {
 		V: de::Visitor<'de>,
 	{
 		match self.message {
-			Message::String(s) => visitor.visit_string(s.to_str()?.to_string()),
+			Message::String(s) => visitor.visit_string(s.into_string()?),
 			_ => Err(DeserializeError::Unexpected(
 				"string",
 				xpc_message_to_type(&self.message),
