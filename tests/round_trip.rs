@@ -16,6 +16,17 @@ macro_rules! round_trip {
 			assert_eq!(decoded, initial);
 		}
 	};
+	[$name:ident, $value:expr, $type:ty] => {
+		#[test]
+		fn $name() {
+			let initial: $type = $value;
+			let encoded = xpc_serde::serialize(&initial).expect("failed to serialize");
+			let reencoded = xpc_object_to_message(message_to_xpc_object(encoded));
+			let decoded =
+				xpc_serde::deserialize::<$type>(reencoded).expect("failed to deserialize");
+			assert!((decoded - initial).abs() < <$type>::EPSILON);
+		}
+	};
 }
 
 macro_rules! cstr {
@@ -37,6 +48,7 @@ macro_rules! dict {
 }
 
 round_trip!(round_trip_bool, true, bool, Message::Bool(true));
+round_trip!(round_trip_char, 'a', char, Message::Uint64('a' as u64));
 round_trip!(round_trip_u8, 42, u8, Message::Uint64(42));
 round_trip!(round_trip_i8, 42, i8, Message::Int64(42));
 round_trip!(round_trip_u16, 42, u16, Message::Uint64(42));
@@ -45,6 +57,8 @@ round_trip!(round_trip_u32, 42, u32, Message::Uint64(42));
 round_trip!(round_trip_i32, 42, i32, Message::Int64(42));
 round_trip!(round_trip_u64, 42, u64, Message::Uint64(42));
 round_trip!(round_trip_i64, 42, i64, Message::Int64(42));
+round_trip![round_trip_f32, 42.123, f32];
+round_trip![round_trip_f64, 42.123456789, f64];
 round_trip!(
 	round_trip_bytes,
 	Bytes::from_static(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
@@ -133,6 +147,33 @@ round_trip!(
 			cstr!("b") => Message::String(cstr!("foo"))
 		])
 	])
+);
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct UnitStruct;
+round_trip!(
+	round_trip_unit_struct,
+	UnitStruct,
+	UnitStruct,
+	Message::Null
+);
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct NewtypeStruct(u32);
+round_trip!(
+	round_trip_newtype_struct,
+	NewtypeStruct(42),
+	NewtypeStruct,
+	Message::Uint64(42)
+);
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct TupleStruct(u32, u32);
+round_trip!(
+	round_trip_tuple_struct,
+	TupleStruct(1, 2),
+	TupleStruct,
+	Message::Array(vec![Message::Uint64(1), Message::Uint64(2)])
 );
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]

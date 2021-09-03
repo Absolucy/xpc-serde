@@ -12,10 +12,6 @@ use serde::{de, ser};
 pub enum SerializeError {
 	#[error("failed to serialize string: {0}")]
 	NulString(#[from] std::ffi::NulError),
-	#[error("key must be a string")]
-	InvalidKey,
-	#[error("attempted to serialize value without key")]
-	MissingKey,
 	#[error("expected {0}")]
 	Expected(&'static str),
 	#[error("{0}")]

@@ -25,3 +25,18 @@ where
 {
 	T::deserialize(de::XpcDeserializer { message })
 }
+
+pub(crate) fn xpc_message_to_type(message: &Message) -> &'static str {
+	match message {
+		Message::Bool(_) => "bool",
+		Message::Double(_) => "f64",
+		Message::Int64(_) => "i64",
+		Message::String(_) => "string",
+		Message::Dictionary(_) => "map",
+		Message::Array(_) => "array",
+		Message::Data(_) => "bytes",
+		Message::Uint64(_) => "u64",
+		Message::Null => "null",
+		_ => "invalid",
+	}
+}

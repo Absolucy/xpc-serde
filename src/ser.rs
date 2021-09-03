@@ -6,7 +6,7 @@
 	file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-use crate::error::SerializeError;
+use crate::{error::SerializeError, xpc_message_to_type};
 use serde::ser::{
 	Serialize, SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple,
 	SerializeTupleStruct, SerializeTupleVariant, Serializer,
@@ -313,12 +313,16 @@ impl<'a> SerializeMap for XpcMapSerializer<'a> {
 	where
 		T: Serialize,
 	{
-		match key.serialize(&mut *self.serializer)? {
+		let message = key.serialize(&mut *self.serializer)?;
+		match message {
 			Message::String(key) => {
 				self.key = Some(key);
 				Ok(())
 			}
-			_ => Err(SerializeError::InvalidKey),
+			_ => panic!(
+				"invalid key: should be string, is {}",
+				xpc_message_to_type(&message)
+			),
 		}
 	}
 
@@ -326,14 +330,11 @@ impl<'a> SerializeMap for XpcMapSerializer<'a> {
 	where
 		T: Serialize,
 	{
-		match std::mem::take(&mut self.key) {
-			Some(key) => {
-				self.map
-					.insert(key, value.serialize(&mut *self.serializer)?);
-				Ok(())
-			}
-			None => Err(SerializeError::MissingKey),
-		}
+		let key = std::mem::take(&mut self.key)
+			.expect("serialize_key() must be called before serialize_value()");
+		self.map
+			.insert(key, value.serialize(&mut *self.serializer)?);
+		Ok(())
 	}
 
 	fn end(self) -> Result<Self::Ok, Self::Error> {
@@ -383,14 +384,11 @@ impl<'a> SerializeStructVariant for XpcMapSerializer<'a> {
 	}
 
 	fn end(self) -> Result<Self::Ok, Self::Error> {
-		let map = match self.variant {
-			Some(variant) => {
-				let mut map = HashMap::<CString, Message>::with_capacity(1);
-				map.insert(CString::new(variant)?, Message::Dictionary(self.map));
-				map
-			}
-			None => self.map,
-		};
+		let variant = self
+			.variant
+			.expect("serialize_field() must be called before end()");
+		let mut map = HashMap::<CString, Message>::with_capacity(1);
+		map.insert(CString::new(variant)?, Message::Dictionary(self.map));
 		Ok(Message::Dictionary(map))
 	}
 }

@@ -6,7 +6,7 @@
 	file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-use crate::error::DeserializeError;
+use crate::{error::DeserializeError, xpc_message_to_type};
 use serde::de::{
 	self, DeserializeSeed, Deserializer, EnumAccess, IntoDeserializer, MapAccess, SeqAccess,
 	VariantAccess,
@@ -67,7 +67,6 @@ impl<'de, 'a> Deserializer<'de> for XpcDeserializer {
 	{
 		match self.message {
 			Message::Int64(v) => visitor.visit_i8(v as i8),
-			Message::Uint64(v) => visitor.visit_i8(v as i8),
 			_ => Err(DeserializeError::Unexpected(
 				"i64",
 				xpc_message_to_type(&self.message),
@@ -81,7 +80,6 @@ impl<'de, 'a> Deserializer<'de> for XpcDeserializer {
 	{
 		match self.message {
 			Message::Int64(v) => visitor.visit_i16(v as i16),
-			Message::Uint64(v) => visitor.visit_i16(v as i16),
 			_ => Err(DeserializeError::Unexpected(
 				"i64",
 				xpc_message_to_type(&self.message),
@@ -109,7 +107,6 @@ impl<'de, 'a> Deserializer<'de> for XpcDeserializer {
 	{
 		match self.message {
 			Message::Int64(v) => visitor.visit_i64(v),
-			Message::Uint64(v) => visitor.visit_i64(v as i64),
 			_ => Err(DeserializeError::Unexpected(
 				"i64",
 				xpc_message_to_type(&self.message),
@@ -122,7 +119,6 @@ impl<'de, 'a> Deserializer<'de> for XpcDeserializer {
 		V: de::Visitor<'de>,
 	{
 		match self.message {
-			Message::Int64(v) => visitor.visit_u8(v as u8),
 			Message::Uint64(v) => visitor.visit_u8(v as u8),
 			_ => Err(DeserializeError::Unexpected(
 				"u64",
@@ -136,7 +132,6 @@ impl<'de, 'a> Deserializer<'de> for XpcDeserializer {
 		V: de::Visitor<'de>,
 	{
 		match self.message {
-			Message::Int64(v) => visitor.visit_u16(v as u16),
 			Message::Uint64(v) => visitor.visit_u16(v as u16),
 			_ => Err(DeserializeError::Unexpected(
 				"u64",
@@ -164,7 +159,6 @@ impl<'de, 'a> Deserializer<'de> for XpcDeserializer {
 		V: de::Visitor<'de>,
 	{
 		match self.message {
-			Message::Int64(v) => visitor.visit_u64(v as u64),
 			Message::Uint64(v) => visitor.visit_u64(v),
 			_ => Err(DeserializeError::Unexpected(
 				"u64",
@@ -575,20 +569,5 @@ impl<'de> VariantAccess<'de> for EnumAccessor {
 			Some(message) => XpcDeserializer { message }.deserialize_map(visitor),
 			None => Err(DeserializeError::EndOfArray),
 		}
-	}
-}
-
-fn xpc_message_to_type(message: &Message) -> &'static str {
-	match message {
-		Message::Bool(_) => "bool",
-		Message::Double(_) => "f64",
-		Message::Int64(_) => "i64",
-		Message::String(_) => "string",
-		Message::Dictionary(_) => "map",
-		Message::Array(_) => "array",
-		Message::Data(_) => "bytes",
-		Message::Uint64(_) => "u64",
-		Message::Null => "null",
-		_ => "invalid",
 	}
 }
