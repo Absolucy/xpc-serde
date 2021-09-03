@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, ffi::CString};
 use xpc_connection::{message_to_xpc_object, xpc_object_to_message, Message};
@@ -44,6 +45,12 @@ round_trip!(round_trip_u32, 42, u32, Message::Uint64(42));
 round_trip!(round_trip_i32, 42, i32, Message::Int64(42));
 round_trip!(round_trip_u64, 42, u64, Message::Uint64(42));
 round_trip!(round_trip_i64, 42, i64, Message::Int64(42));
+round_trip!(
+	round_trip_bytes,
+	Bytes::from_static(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+	Bytes,
+	Message::Data(vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+);
 round_trip!(
 	round_trip_string,
 	"Hello World!".to_string(),
