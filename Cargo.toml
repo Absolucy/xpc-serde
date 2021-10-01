@@ -8,7 +8,7 @@ license = "MPL-2.0"
 [dependencies]
 serde = { version = "1.0.129", features = ["derive"] }
 thiserror = "1.0.26"
-xpc-connection = { git = "https://github.com/dfrankland/xpc-connection-rs", rev = "3ba4b76785df329c9f271901f107406982907a0b" }
+xpc-connection = { git = "https://github.com/absolucy/xpc-connection-rs", branch = "fuck-safety" }
 
 [dev-dependencies]
 bytes = { version = "1.1.0", features = ["serde"] }
